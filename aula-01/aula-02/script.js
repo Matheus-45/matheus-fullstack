@@ -1,32 +1,58 @@
-console.log("_Aula 3 - Task Manager Avançado Iniciado");
+// script.js - Aula 4 - Task Manager com Filtros e Busca (Dark Mode corrigido)
+
+console.log("=== Aula 4 - Task Manager com Filtros e Busca ===");
 
 let tarefas = [];
+let filtroAtual = "todas";
+let termoBusca = "";
 
-
-// 1. Função para carregar tarefas salvas
+// ==================== LOCALSTORAGE ====================
 function carregarTarefas() {
     const tarefasSalvas = localStorage.getItem("tarefas");
-
     if (tarefasSalvas) {
         tarefas = JSON.parse(tarefasSalvas);
-        console.log(" Tarefas carregadas do LocalStorage:", tarefas.length, "tarefas");
     } else {
-        // Tarefas iniciais apenas na primeira vez
         tarefas = [
             { id: 1, texto: "Estudar JavaScript", completa: false },
-            { id: 2, texto: "Fazer commit da Aula 2", completa: true }
+            { id: 2, texto: "Fazer commit da Aula 3", completa: true },
+            { id: 3, texto: "Aprender filtros e busca", completa: false }
         ];
-        console.log("Usando tarefas iniciais");
     }
 }
 
-// 2. Função para salvar tarefas
 function salvarTarefas() {
-    localStorage.setItem("tarefas", JSON.stringify(tarefas)); //salva como texto
-    console.log("Tarefas salvas no LocalStorage");
+    localStorage.setItem("tarefas", JSON.stringify(tarefas));
 }
 
-// contadores 
+// ==================== FILTROS E BUSCA ====================
+function tarefasFiltradas() {
+    let filtradas = tarefas;
+
+    if (filtroAtual === "pendentes") filtradas = filtradas.filter(t => !t.completa);
+    else if (filtroAtual === "concluidas") filtradas = filtradas.filter(t => t.completa);
+
+    if (termoBusca) {
+        const termo = termoBusca.toLowerCase();
+        filtradas = filtradas.filter(t => t.texto.toLowerCase().includes(termo));
+    }
+
+    return filtradas;
+}
+
+function configurarBotoesFiltro() {
+    document.querySelectorAll('.filtro-btn').forEach(btn => {
+        btn.addEventListener("click", function() {
+            filtroAtual = this.getAttribute("data-filtro");
+            document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove("bg-blue-600", "text-white"));
+            this.classList.add("bg-blue-600", "text-white");
+
+            renderizarLista();
+            atualizarContadores();
+        });
+    });
+}
+
+// ==================== CONTADORES ====================
 function atualizarContadores() {
     const total = tarefas.length;
     const pendentes = tarefas.filter(t => !t.completa).length;
@@ -42,7 +68,7 @@ function atualizarContadores() {
     }
 }
 
-// Dark mode
+// ==================== DARK MODE ====================
 function toggleDarkMode() {
     document.documentElement.classList.toggle("dark");
     
@@ -54,15 +80,14 @@ function toggleDarkMode() {
     }
 }
 
-// renderização
-
+// ==================== RENDERIZAÇÃO PRINCIPAL ====================
 function renderizarTarefas() {
     const app = document.getElementById("app");
-      
+    
     const html = `
-        <div class="max-w-2xl mx-auto p-6 ">
+        <div class="max-w-2xl mx-auto p-6">
             <div class="flex justify-between items-center mb-8">
-                <h1 class="text-3xl font-bold text-gray-800 dark:text-white">📋 Task Manager</h1>
+                <h1 class="text-3xl font-bold text-gray-800 dark:text-white">📋 Task Manager - Aula 4</h1>
                 
                 <button id="btn-darkmode" 
                         class="px-5 py-2 bg-gray-200 dark:bg-gray-700 rounded-xl text-sm font-medium">
@@ -70,10 +95,22 @@ function renderizarTarefas() {
                 </button>
             </div>
 
-            <!-- Contadores -->
+            <div class="flex flex-col sm:flex-row gap-3 mb-6">
+                <div class="flex gap-2">
+                    <button data-filtro="todas" class="filtro-btn px-5 py-2 rounded-xl font-medium bg-blue-600 text-white">Todas</button>
+                    <button data-filtro="pendentes" class="filtro-btn px-5 py-2 rounded-xl font-medium">Pendentes</button>
+                    <button data-filtro="concluidas" class="filtro-btn px-5 py-2 rounded-xl font-medium">Concluídas</button>
+                </div>
+                
+                <input 
+                    type="text" 
+                    id="input-busca"
+                    placeholder="Buscar tarefa..." 
+                    class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:border-blue-500 dark:bg-gray-800 dark:text-white">
+            </div>
+
             <div id="contadores" class="text-sm text-gray-600 dark:text-gray-400 mb-6 text-center"></div>
 
-            <!-- Formulário -->
             <div class="flex gap-3 mb-8">
                 <input 
                     type="text" 
@@ -81,9 +118,7 @@ function renderizarTarefas() {
                     placeholder="Digite uma nova tarefa..." 
                     class="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:border-blue-500 dark:bg-gray-800 dark:text-white">
                 
-                <button 
-                    id="btn-adicionar"
-                    class="bg-blue-600 hover:bg-blue-700 text-white dark:text-white px-8 py-3 rounded-xl font-medium">
+                <button id="btn-adicionar" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-medium">
                     Adicionar
                 </button>
             </div>
@@ -91,59 +126,56 @@ function renderizarTarefas() {
             <div id="lista-tarefas" class="space-y-3"></div>
         </div>
     `;
-    
+
     app.innerHTML = html;
 
+    // === Eventos ===
     document.getElementById("btn-adicionar").addEventListener("click", adicionarTarefa);
-    document.getElementById("btn-darkmode").addEventListener("click", toggleDarkMode);
+    document.getElementById("input-busca").addEventListener("input", (e) => {
+        termoBusca = e.target.value;
+        renderizarLista();
+        atualizarContadores();
+    });
 
+    configurarBotoesFiltro();
     renderizarLista();
     atualizarContadores();
+
+    // Dark Mode - reanexado toda vez que a tela principal é renderizada
+    const btnDark = document.getElementById("btn-darkmode");
+    if (btnDark) {
+        btnDark.addEventListener("click", toggleDarkMode);
+    }
 }
 
-
-// Renderiza apenas as tarefas na lista
+// ==================== LISTA ====================
 function renderizarLista() {
     const listaContainer = document.getElementById("lista-tarefas");
-    if (!listaContainer) {
-        console.error ("Elemento #lista-tarefas não encontrado!");
-        return;
-    }
+    const tarefasParaMostrar = tarefasFiltradas();
 
     let tarefasHTML = "";
 
-    tarefas.forEach(tarefa => {
+    tarefasParaMostrar.forEach(tarefa => {
         tarefasHTML += `
-            <div class=" border border-gray-600 flex items-center gap-3 bg-gray-50 p-4 rounded-xl">
-                <input 
-                    type="checkbox" 
-                    ${tarefa.completa ? 'checked' : ''}
-                    data-id="${tarefa.id}"
-                    class="w-5 h-5 accent-blue-600">
-                
-                <span class="${tarefa.completa ? 'line-through text-gray-500' : ''} flex-1">
+            <div class="flex items-center gap-3 bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+                <input type="checkbox" ${tarefa.completa ? "checked" : ""} data-id="${tarefa.id}" class="w-5 h-5 accent-blue-600">
+                <span class="${tarefa.completa ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-800 dark:text-white'} flex-1">
                     ${tarefa.texto}
                 </span>
-                
-                <button 
-                    data-id="${tarefa.id}"
-                    class="deletar-btn text-red-500 hover:text-red-700">
-                    Deletar
-                </button>
+                <button data-id="${tarefa.id}" class="deletar-btn text-red-500 hover:text-red-700 px-4 py-1">Deletar</button>
             </div>
         `;
     });
 
-    listaContainer.innerHTML = tarefasHTML || "<p class='text-gray-500 text-center py-8'>Nenhuma tarefa ainda...</p>";
-    adicionarEventosNaLista();
+    listaContainer.innerHTML = tarefasHTML || "<p class='text-gray-500 dark:text-gray-400 text-center py-12'>Nenhuma tarefa encontrada...</p>";
 
+    adicionarEventos();
 }
 
-// Adicionar eventos nos checkboxes e botões de deletar
-function adicionarEventosNaLista() {
-    //marcar como completa
-    document.querySelectorAll(`input[type="checkbox"]`).forEach(checkbox => {
-        checkbox.addEventListener("change", function() {
+// ==================== EVENTOS DA LISTA ====================
+function adicionarEventos() {
+    document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener("change", function() {
             const id = Number(this.getAttribute("data-id"));
             const tarefa = tarefas.find(t => t.id === id);
             if (tarefa) {
@@ -155,11 +187,10 @@ function adicionarEventosNaLista() {
         });
     });
 
-    // Deletar
-    document.querySelectorAll(`.deletar-btn`).forEach(btn => {
+    document.querySelectorAll('.deletar-btn').forEach(btn => {
         btn.addEventListener("click", function() {
             const id = Number(this.getAttribute("data-id"));
-            if (confirm("Tem certeza que deseja deletar esta tarefa?")) {
+            if (confirm("Deletar esta tarefa?")) {
                 tarefas = tarefas.filter(t => t.id !== id);
                 salvarTarefas();
                 renderizarLista();
@@ -177,24 +208,14 @@ function adicionarTarefa() {
     const texto = input.value.trim();
     if (texto === "") return;
 
-    tarefas.push({
-        id: Date.now(),
-        texto: texto,
-        completa: false
-    });
+    tarefas.push({ id: Date.now(), texto: texto, completa: false });
 
     salvarTarefas();
     input.value = "";
-    renderizarTarefas();
+    renderizarLista();
     atualizarContadores();
 }
 
+// ==================== INICIAR ====================
 carregarTarefas();
 renderizarTarefas();
-
-
-
-
-
-
-
